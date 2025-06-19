@@ -16,6 +16,22 @@ class ReferenceDataManager:
         # Future: Add other missing reference data URLs here
     }
 
+    # Hardcoded missing country codes found in estabelecimentos but not in PAISCSV
+    MISSING_PAISES = {
+        "008": "CÓDIGO NÃO ENCONTRADO - 008",
+        "009": "CÓDIGO NÃO ENCONTRADO - 009",
+        "150": "CÓDIGO NÃO ENCONTRADO - 150",
+        "200": "CÓDIGO NÃO ENCONTRADO - 200",
+        "359": "CÓDIGO NÃO ENCONTRADO - 359",
+        "367": "CÓDIGO NÃO ENCONTRADO - 367",
+        "393": "CÓDIGO NÃO ENCONTRADO - 393",
+        "452": "CÓDIGO NÃO ENCONTRADO - 452",
+        "498": "CÓDIGO NÃO ENCONTRADO - 498",
+        "678": "CÓDIGO NÃO ENCONTRADO - 678",
+        "737": "CÓDIGO NÃO ENCONTRADO - 737",
+        # Add more as discovered
+    }
+
     def __init__(self, config):
         self.config = config
         self.cache_dir = Path(config.temp_dir) / "reference_cache"
@@ -164,4 +180,36 @@ class ReferenceDataManager:
 
         except Exception as e:
             logger.error(f"Failed to process SERPRO motivos data: {e}")
+            return None
+
+    def diff_paises_data(self, existing_codes: Set[str]) -> Optional[pl.DataFrame]:
+        """Get hardcoded missing country codes that aren't in official data."""
+        try:
+            # Filter to only codes that are actually missing
+            missing_codes = {
+                code: desc
+                for code, desc in self.MISSING_PAISES.items()
+                if code not in existing_codes
+            }
+
+            if not missing_codes:
+                logger.info("No missing country codes to add")
+                return None
+
+            # Create DataFrame from missing codes
+            missing_df = pl.DataFrame(
+                {
+                    "codigo": list(missing_codes.keys()),
+                    "descricao": list(missing_codes.values()),
+                }
+            )
+
+            logger.info(
+                f"Found {len(missing_df)} missing country codes to add: {list(missing_codes.keys())}"
+            )
+
+            return missing_df
+
+        except Exception as e:
+            logger.error(f"Failed to create missing paises data: {e}")
             return None

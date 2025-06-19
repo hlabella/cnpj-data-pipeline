@@ -124,8 +124,8 @@ DATE_COLUMNS = {
 # Reference data enhancements
 REFERENCE_ENHANCEMENTS = {
     "MOTICSV": {"source": "serpro", "ref_type": "motivos", "code_column": "codigo"},
+    "PAISCSV": {"source": "hardcoded", "ref_type": "paises", "code_column": "codigo"},
     # Future enhancements can be added here
-    # "MUNICCSV": {"source": "ibge", "ref_type": "municipios", "code_column": "codigo"}
 }
 
 
@@ -302,6 +302,80 @@ class Processor:
             logger.error(f"Failed to enhance motivos data: {e}")
             return df  # Return original data on error
 
+    def _enhance_paises_data(
+        self, df: Optional[pl.DataFrame] = None, db=None, table_name: str = "paises"
+    ) -> Optional[pl.DataFrame]:
+        """
+        Enhance paises data with missing codes from hardcoded data.
+
+        Args:
+            df: DataFrame with official paises data (for normal processing)
+            db: Database adapter (for chunked processing)
+            table_name: Table name for database operations
+
+        Returns:
+            Enhanced DataFrame if df was provided, None if working with database
+        """
+        try:
+            from src.reference_data import ReferenceDataManager
+
+            ref_manager = ReferenceDataManager(self.config)
+
+            # Get existing codes either from dataframe or database
+            if df is not None:
+                # Normal processing - get codes from dataframe
+                existing_codes = set(df["codigo"].to_list())
+                logger.info(f"Official PAISCSV contains {len(existing_codes)} codes")
+            else:
+                # Chunked processing - get codes from database
+                if db is None:
+                    raise ValueError("Either df or db must be provided")
+
+                with db.cursor() as cur:
+                    cur.execute(f"SELECT codigo FROM {table_name}")  # nosec B608
+                    existing_codes = {row[0] for row in cur.fetchall()}
+                logger.info(
+                    f"Official PAISCSV loaded {len(existing_codes)} codes to database"
+                )
+
+            # Get only missing codes from hardcoded data
+            missing_df = ref_manager.diff_paises_data(existing_codes)
+
+            if missing_df is not None and len(missing_df) > 0:
+                if df is not None:
+                    # Normal processing - concatenate dataframes
+                    enhanced_df = pl.concat([df, missing_df])
+                    logger.info(
+                        f"Enhanced paises: {len(existing_codes)} official + {len(missing_df)} hardcoded = {len(enhanced_df)} total"
+                    )
+                    return enhanced_df
+                else:
+                    # Chunked processing - load to database
+                    logger.info(
+                        f"Loading {len(missing_df)} missing paises codes from hardcoded data"
+                    )
+                    db.bulk_upsert(missing_df, table_name)
+
+                    # Log final count
+                    with db.cursor() as cur:
+                        cur.execute(f"SELECT COUNT(*) FROM {table_name}")  # nosec B608
+                        final_count = cur.fetchone()[0]
+                    logger.info(f"Total paises codes after enhancement: {final_count}")
+            else:
+                logger.info("No additional paises codes needed from hardcoded data")
+
+            # Return original df if no enhancement needed (or None for db mode)
+            return df
+
+        except ImportError:
+            logger.warning(
+                "ReferenceDataManager not available, using official data only"
+            )
+            return df
+        except Exception as e:
+            logger.error(f"Failed to enhance paises data: {e}")
+            return df  # Return original data on error
+
     def _enhance_reference_data(
         self,
         file_type: str,
@@ -318,8 +392,8 @@ class Processor:
         # Delegate to specific enhancement method based on source
         if enhancement_config["source"] == "serpro":
             return self._enhance_motivos_data(df=df, db=db, table_name=table_name)
-        # elif enhancement_config["source"] == "ibge":
-        #     return self._enhance_municipios_data(df=df, db=db, table_name=table_name)
+        elif enhancement_config["source"] == "hardcoded":
+            return self._enhance_paises_data(df=df, db=db, table_name=table_name)
 
         return df
 
