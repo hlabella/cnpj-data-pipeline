@@ -18,11 +18,11 @@ services:
       DATABASE_BACKEND: ${DATABASE_BACKEND}
 
       # PostgreSQL config
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
       # OR MySQL config
       # MYSQL_HOST: ${MYSQL_HOST}
@@ -41,6 +41,11 @@ services:
       BATCH_SIZE: ${BATCH_SIZE:-100000}
       MAX_MEMORY_PERCENT: ${MAX_MEMORY_PERCENT:-75}
       DEBUG: ${DEBUG:-false}
+
+      # Download config
+      DOWNLOAD_STRATEGY: ${DOWNLOAD_STRATEGY:-sequential}
+      DOWNLOAD_WORKERS: ${DOWNLOAD_WORKERS:-4}
+      KEEP_DOWNLOADED_FILES: ${KEEP_DOWNLOADED_FILES:-false}
 
 volumes:
   pipeline_temp:
