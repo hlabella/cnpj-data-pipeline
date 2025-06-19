@@ -1,4 +1,4 @@
-# BigQuery requirements (placeholder - not yet implemented)
+# BigQuery requirements
 -r base.txt
-# google-cloud-bigquery  # Uncomment when BigQuery support is added
-# pandas  # Required for BigQuery dataframe loading
+# google-cloud-bigquery>=3.0.0  # Uncomment when BigQuery support is added
+# pandas>=2.0.0  # Required for BigQuery dataframe loading

@@ -1,16 +1,7 @@
-# Main requirements file - uses PostgreSQL by default
+# CNPJ Data Pipeline Requirements
+# This is a convenience file that installs PostgreSQL dependencies by default
 # For other databases, use:
 #   pip install -r requirements/mysql.txt
 #   pip install -r requirements/bigquery.txt
 
-# Core dependencies
-requests>=2.31.0
-beautifulsoup4>=4.12.0
-polars>=0.20.0
-psutil>=5.9.0
-
-# Progress bars
-tqdm>=4.66.0
-
-# Database adapters
-psycopg2-binary>=2.9.0  # PostgreSQL
+-r requirements/postgres.txt
