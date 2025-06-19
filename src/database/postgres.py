@@ -380,7 +380,7 @@ class PostgreSQLAdapter(DatabaseAdapter):
 
         # Estimate temp table size
         with conn.cursor() as cur:
-            cur.execute(f"SELECT COUNT(*) FROM {temp_table}")  # nosec B608 - temp_table is safely generated
+            cur.execute(f"SELECT COUNT(*) FROM {temp_table}")  # nosec B608
             temp_rows = cur.fetchone()[0]
 
         if temp_rows > 1_000_000:
@@ -416,12 +416,21 @@ class PostgreSQLAdapter(DatabaseAdapter):
         else:
             update_clause = ""
 
+        # Add WHERE EXISTS clause for tables with foreign keys
+        where_clause = ""
+        if target_table == "estabelecimentos":
+            where_clause = "WHERE EXISTS (SELECT 1 FROM empresas e WHERE e.cnpj_basico = t.cnpj_basico)"
+        # Add more tables with FKs as needed:
+        # elif target_table == "socios":
+        #     where_clause = "WHERE EXISTS (SELECT 1 FROM empresas e WHERE e.cnpj_basico = t.cnpj_basico)"
+
         # Build SQL with deduplication using DISTINCT ON
         if update_clause:
             sql = f"""
                 INSERT INTO {target_table} ({columns_str})
                 SELECT DISTINCT ON ({pk_columns_str}) {columns_str}
-                FROM {temp_table}
+                FROM {temp_table} t
+                {where_clause}
                 ORDER BY {pk_columns_str}
                 ON CONFLICT ({conflict_columns})
                 DO UPDATE SET {update_clause}
@@ -430,13 +439,26 @@ class PostgreSQLAdapter(DatabaseAdapter):
             sql = f"""
                 INSERT INTO {target_table} ({columns_str})
                 SELECT DISTINCT ON ({pk_columns_str}) {columns_str}
-                FROM {temp_table}
+                FROM {temp_table} t
+                {where_clause}
                 ORDER BY {pk_columns_str}
                 ON CONFLICT ({conflict_columns}) DO NOTHING
             """  # nosec B608
 
         with conn.cursor() as cur:
             cur.execute(sql)
+
+            # Log how many records were filtered out
+            if where_clause:
+                cur.execute(f"SELECT COUNT(*) FROM {temp_table}")  # nosec B608
+                total_in_temp = cur.fetchone()[0]
+                inserted = cur.rowcount
+                filtered = total_in_temp - inserted
+                if filtered > 0:
+                    logger.warning(
+                        f"Filtered {filtered} {target_table} records due to missing foreign keys "
+                        f"({filtered / total_in_temp * 100:.1f}% of batch)"
+                    )
 
     def _merge_temp_to_target_batched(
         self,
@@ -473,6 +495,11 @@ class PostgreSQLAdapter(DatabaseAdapter):
                 f"ALTER TABLE {temp_table} ADD COLUMN IF NOT EXISTS batch_row_num SERIAL"
             )  # nosec B608
 
+        # Add WHERE EXISTS clause for tables with foreign keys
+        where_clause = ""
+        if target_table == "estabelecimentos":
+            where_clause = "AND EXISTS (SELECT 1 FROM empresas e WHERE e.cnpj_basico = deduplicated.cnpj_basico)"
+
         # Build SQL with deduplication
         if update_clause:
             merge_sql = f"""
@@ -483,7 +510,7 @@ class PostgreSQLAdapter(DatabaseAdapter):
                     FROM {temp_table}
                     WHERE batch_row_num BETWEEN %s AND %s
                 ) deduplicated
-                WHERE rn = 1
+                WHERE rn = 1 {where_clause}
                 ON CONFLICT ({conflict_columns})
                 DO UPDATE SET {update_clause}
             """  # nosec B608
@@ -496,7 +523,7 @@ class PostgreSQLAdapter(DatabaseAdapter):
                     FROM {temp_table}
                     WHERE batch_row_num BETWEEN %s AND %s
                 ) deduplicated
-                WHERE rn = 1
+                WHERE rn = 1 {where_clause}
                 ON CONFLICT ({conflict_columns}) DO NOTHING
             """  # nosec B608
 
