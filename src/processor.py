@@ -1,7 +1,7 @@
 import logging
 import polars as pl
 from pathlib import Path
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional
 import tempfile
 import psutil
 import os
@@ -167,16 +167,6 @@ class Processor:
         logger.warning(f"Unknown file type for: {filename}")
         return None
 
-    def _check_memory_available(self, required_mb: float) -> bool:
-        """Check if enough memory is available."""
-        memory = psutil.virtual_memory()
-        available_mb = memory.available / (1024 * 1024)
-
-        # Leave at least 20% system memory free
-        safety_margin_mb = (memory.total * 0.2) / (1024 * 1024)
-
-        return available_mb > (required_mb + safety_margin_mb)
-
     def _convert_file_encoding_chunked(
         self, input_file: Path, output_file: Optional[Path] = None
     ) -> Path:
@@ -236,95 +226,6 @@ class Processor:
             logger.error(f"Error converting file encoding: {str(e)}")
             if output_file.exists():
                 output_file.unlink()
-            raise
-
-    def _read_csv_lazy(self, file_path: Path, file_type: str) -> pl.LazyFrame:
-        """Read CSV file using lazy evaluation for better memory management."""
-        logger.info(f"Reading CSV file lazily: {file_path.name}")
-
-        if self.debug:
-            logger.debug("Using lazy frame evaluation to minimize memory usage")
-
-        # Start with lazy reading
-        lf = pl.scan_csv(
-            file_path,
-            separator=";",
-            encoding="utf8",
-            has_header=False,
-            null_values=[""],
-            ignore_errors=True,
-            infer_schema_length=0,
-            low_memory=True,
-        )
-
-        return lf
-
-    def _get_actual_column_names(self, lf: pl.LazyFrame) -> List[str]:
-        """Get the actual column names from a lazy frame."""
-        # Get schema to see actual column names
-        schema = lf.schema
-        return list(schema.keys())
-
-    def _apply_transformations_lazy(
-        self, lf: pl.LazyFrame, file_type: str
-    ) -> pl.LazyFrame:
-        """Apply transformations to a lazy frame."""
-        try:
-            col_mapping = COLUMN_MAPPINGS.get(file_type, {})
-
-            if col_mapping:
-                # Get actual column names from the lazy frame
-                actual_columns = self._get_actual_column_names(lf)
-
-                if self.debug:
-                    logger.debug(
-                        f"Actual columns in lazy frame: {actual_columns[:5]}..."
-                    )
-                    logger.debug(f"Expected mapping has {len(col_mapping)} columns")
-
-                # Create mapping from actual column names to desired names
-                rename_mapping = {}
-                for i, actual_col in enumerate(actual_columns):
-                    if i in col_mapping:
-                        rename_mapping[actual_col] = col_mapping[i]
-                    else:
-                        # Keep columns that aren't in the mapping
-                        rename_mapping[actual_col] = actual_col
-
-                if self.debug:
-                    logger.debug(
-                        f"Rename mapping (first 5): {dict(list(rename_mapping.items())[:5])}"
-                    )
-
-                # Apply renaming
-                lf = lf.rename(rename_mapping)
-
-            # Convert numeric columns
-            numeric_cols = NUMERIC_COLUMNS.get(file_type, [])
-            for col in numeric_cols:
-                # Check if column exists in the lazy frame
-                if col in lf.columns:
-                    lf = lf.with_columns(
-                        pl.col(col).str.replace(",", ".").cast(pl.Float64, strict=False)
-                    )
-
-            # Clean date columns
-            date_cols = DATE_COLUMNS.get(file_type, [])
-            for col in date_cols:
-                # Check if column exists in the lazy frame
-                if col in lf.columns:
-                    lf = lf.with_columns(
-                        pl.when(pl.col(col) == "0")
-                        .then(None)
-                        .otherwise(pl.col(col))
-                        .alias(col)
-                    )
-
-            return lf
-
-        except Exception as e:
-            logger.error(f"Error applying transformations to {file_type}: {e}")
-            logger.error(f"Schema: {lf.schema}")
             raise
 
     def _enhance_motivos_data(
@@ -504,6 +405,23 @@ class Processor:
                 except Exception as e:
                     logger.warning(f"Could not delete temporary file {utf8_file}: {e}")
 
+    def _transform_country_codes(self, df: pl.DataFrame) -> pl.DataFrame:
+        """Ensure country codes are properly padded to 3 digits."""
+        if "pais" in df.columns:
+            df = df.with_columns(
+                pl.when(pl.col("pais").is_not_null() & (pl.col("pais") != ""))
+                .then(
+                    pl.col("pais")
+                    .cast(pl.Utf8)
+                    .str.strip_chars()
+                    .str.zfill(3)  # Pad with zeros to 3 digits
+                )
+                .otherwise(pl.col("pais"))
+                .alias("pais")
+            )
+            logger.debug("Transformed country codes to 3-digit format")
+        return df
+
     def _apply_transformations(self, df: pl.DataFrame, file_type: str) -> pl.DataFrame:
         """Apply necessary transformations to the dataframe (non-lazy version)."""
         try:
@@ -536,6 +454,10 @@ class Processor:
                         .otherwise(pl.col(col))
                         .alias(col)
                     )
+
+            # Transform country codes for estabelecimentos
+            if file_type == "ESTABELE":
+                df = self._transform_country_codes(df)
 
             return df
 
