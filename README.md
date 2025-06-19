@@ -1,6 +1,6 @@
 # 🇧🇷 CNPJ Data Pipeline
 
-Um script modular e configurável para processar arquivos CNPJ da Receita Federal do Brasil. Processamento inteligente de 50+ milhões de empresas com suporte a múltiplos bancos de dados.
+Um script modular e configurável para processar arquivos CNPJ da Receita Federal do Brasil. Processamento inteligente de 60+ milhões de empresas com suporte a múltiplos bancos de dados.
 
 ## Características Principais
 
@@ -284,7 +284,7 @@ Tempos típicos de processamento:
 
 # 🇧🇷 CNPJ Data Pipeline (English)
 
-A configurable, modular data pipeline for Brazilian CNPJ registry files. Smart processing of 50+ million companies with multi-database support.
+A configurable, modular data pipeline for Brazilian CNPJ registry files. Smart processing of 60+ million companies with multi-database support.
 
 ## Key Features
 
