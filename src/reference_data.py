@@ -22,6 +22,7 @@ class ReferenceDataManager:
         "009": "CÓDIGO NÃO ENCONTRADO - 009",
         "150": "CÓDIGO NÃO ENCONTRADO - 150",
         "200": "CÓDIGO NÃO ENCONTRADO - 200",
+        "321": "CÓDIGO NÃO ENCONTRADO - 321",
         "359": "CÓDIGO NÃO ENCONTRADO - 359",
         "367": "CÓDIGO NÃO ENCONTRADO - 367",
         "393": "CÓDIGO NÃO ENCONTRADO - 393",
