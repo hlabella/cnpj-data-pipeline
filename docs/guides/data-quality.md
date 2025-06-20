@@ -1,6 +1,6 @@
 # Guia de Qualidade de Dados CNPJ
 
-Dados governamentais são como arqueologia digital - cada camada revela uma era diferente de sistemas e decisões. Aqui está o que você realmente encontrará ao processar 50 milhões de registros.
+Dados governamentais são como arqueologia digital - cada camada revela uma era diferente de sistemas e decisões. Aqui está o que você realmente encontrará ao processar 63 milhões de registros.
 
 ## Problemas Conhecidos e Soluções
 
@@ -236,7 +236,7 @@ Abraçar essas imperfeições, documentá-las, e construir resiliência no seu p
 
 # CNPJ Data Quality Guide (English)
 
-Government data is digital archaeology - each layer reveals different systems and decisions. Here's what you'll really find processing 50 million records.
+Government data is digital archaeology - each layer reveals different systems and decisions. Here's what you'll really find processing 63 million records.
 
 ## Known Issues
 

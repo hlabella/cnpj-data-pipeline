@@ -1,6 +1,6 @@
 # 🇧🇷 CNPJ Data Pipeline
 
-Um script modular e configurável para processar arquivos CNPJ da Receita Federal do Brasil. Processamento inteligente de 60+ milhões de empresas com suporte a múltiplos bancos de dados.
+Um script modular e configurável para processar arquivos CNPJ da Receita Federal do Brasil. Processamento inteligente de 63+ milhões de empresas com suporte a múltiplos bancos de dados.
 
 ## Características Principais
 
@@ -258,7 +258,7 @@ cnpj-data-pipeline/
 
 Tempos típicos de processamento:
 
-| Sistema | Memória | Tempo (60M+ empresas) |
+| Sistema | Memória | Tempo (63M+ empresas) |
 |---------|---------|---------------------|
 | VPS básico | 4GB | ~8 horas |
 | Servidor padrão | 16GB | ~2 horas |
@@ -396,6 +396,6 @@ Factory pattern for database adapters, intelligent resource detection, chunked p
 
 ## Performance
 
-Processes 60M+ records in 1-12 hours depending on system resources.
+Processes 63M+ records in 1-12 hours depending on system resources.
 
 Made with engineering excellence for the Brazilian tech community.

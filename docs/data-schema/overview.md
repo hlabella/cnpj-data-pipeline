@@ -6,9 +6,9 @@ O maior desafio em trabalhar com dados governamentais não é o volume - é ente
 
 O Cadastro Nacional da Pessoa Jurídica é o registro oficial de todas as empresas brasileiras. Este conjunto de dados abertos contém:
 
-- **50+ milhões** de empresas cadastradas
-- **60+ milhões** de estabelecimentos físicos
-- **20+ milhões** de relações societárias
+- **63+ milhões** de empresas cadastradas
+- **66+ milhões** de estabelecimentos físicos
+- **26+ milhões** de relações societárias
 - Atualização **mensal** pela Receita Federal
 
 ## Estrutura dos Dados
@@ -56,7 +56,7 @@ Dados que raramente mudam, usados para lookups:
 ### Formato
 - **Encoding**: ISO-8859-1 (não UTF-8!)
 - **Separador**: Ponto e vírgula (;)
-- **Tamanho**: ~15GB comprimido, ~85GB processado
+- **Tamanho**: ~7GB comprimido, ~21GB processado
 
 ### Peculiaridades
 1. **Datas zeradas**: "00000000" significa NULL
@@ -67,7 +67,7 @@ Dados que raramente mudam, usados para lookups:
 ## Desafios de Processamento
 
 ### Volume
-Com 50 milhões de registros, uma abordagem ingênua de carregar tudo em memória simplesmente não funciona. É necessário:
+Com 63 milhões de registros, uma abordagem ingênua de carregar tudo em memória simplesmente não funciona. É necessário:
 - Processamento em chunks
 - Estratégia de upsert eficiente
 - Índices bem planejados
@@ -108,9 +108,9 @@ Understanding Brazilian company registry data - the complete picture of 50+ mill
 ## What is CNPJ Data?
 
 Brazil's official company registry containing:
-- **50+ million** companies
-- **60+ million** establishments
-- **20+ million** partnership records
+- **63+ million** companies
+- **66+ million** establishments
+- **26+ million** partnership records
 - **Monthly** updates from Federal Revenue
 
 ## Structure
@@ -130,7 +130,7 @@ Reference tables for lookups:
 ## Technical Details
 
 - Format: ISO-8859-1, semicolon-separated
-- Size: ~15GB compressed, ~85GB processed
+- Size: ~7GB compressed, ~21GB processed
 - Dates: YYYYMMDD format (zeros = null)
 - Privacy: CPF numbers partially masked
 
@@ -138,4 +138,4 @@ Reference tables for lookups:
 
 Volume requires chunked processing. Quality issues include encoding problems and invalid foreign keys. Performance bottleneck is database writes, not parsing.
 
-The key insight: this isn't just data - it's the complete economic map of Brazil.
+The key insight: this isn't just data - it's the complete economic map of Brazil with 63 million companies and 25 million business relationships.

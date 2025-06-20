@@ -34,10 +34,10 @@ Localização física da empresa. Uma empresa (CNPJ básico) pode ter múltiplos
 ## Estrutura dos Dados
 
 ### Volume
-- **50+ milhões** de empresas
-- **60+ milhões** de estabelecimentos
-- **20+ milhões** de sócios
-- **~15GB** comprimido / **~85GB** descomprimido
+- **63+ milhões** de empresas
+- **66+ milhões** de estabelecimentos
+- **26+ milhões** de sócios
+- **~7GB** comprimido / **~21GB** descomprimido
 
 ### Formato
 - **Encoding**: ISO-8859-1 (Latin-1)
@@ -87,6 +87,6 @@ https://dados.gov.br/dados/conjuntos-dados/cadastro-nacional-da-pessoa-juridica-
 ## Technical Notes
 
 - Format: ISO-8859-1, semicolon-separated
-- Size: ~15GB compressed / ~85GB uncompressed
+- Size: ~7GB compressed / ~21GB uncompressed
 - Updates: Monthly with 30-45 day delay
 - Privacy: CPF numbers partially masked by law

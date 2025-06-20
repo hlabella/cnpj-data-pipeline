@@ -97,7 +97,7 @@ def download_and_extract(self, directory: str, filename: str) -> List[Path]:
 | Simples | 1 arquivo | ~500 MB |
 | Referências | 6 arquivos | ~10 MB |
 
-**Total**: ~15.5 GB comprimido
+**Total**: ~6.5 GB comprimido
 
 ### Nomenclatura
 - Dados principais: `[Tipo][Numero].zip`
@@ -200,7 +200,7 @@ O formato ocasionalmente muda:
 2. **Download Resumível**: Suporte para retomar downloads interrompidos
 3. **Downloads Paralelos**: Configure DOWNLOAD_STRATEGY=parallel para melhor performance
 4. **Manter Arquivos**: Use KEEP_DOWNLOADED_FILES=true para re-execuções (economiza bandwidth)
-5. **Verificação de Espaço**: 15GB download + 85GB processado = 100GB necessários
+5. **Verificação de Espaço**: 7GB download + 21GB processado = ~30GB necessários
 6. **Bandwidth Throttling**: Seja respeitoso com servidores públicos
 
 ## Conclusão
@@ -231,14 +231,14 @@ Getting CNPJ data is simple. The challenge is doing it reliably, every month, wi
 ## File Structure
 
 ```
-/2024-01/
-├── Empresas[0-9].zip      (~3GB total)
-├── Estabelecimentos[0-19].zip  (~8GB total)
-├── Socios[0-9].zip        (~4GB total)
+/2025-01/
+├── Empresas[0-9].zip      (~1GB total)
+├── Estabelecimentos[0-19].zip  (~3.3GB total)
+├── Socios[0-9].zip        (~0.5GB total)
 └── [Reference tables].zip  (~10MB)
 ```
 
-Total: ~15.5GB compressed
+Total: ~6.5GB compressed
 
 ## Download Strategy
 
@@ -259,7 +259,7 @@ Total: ~15.5GB compressed
 - Support resumable downloads
 - Configure parallel downloads for better performance
 - Keep files for re-runs (KEEP_DOWNLOADED_FILES=true saves bandwidth)
-- Check disk space (need 100GB)
+- Check disk space (need 28GB)
 - Throttle bandwidth respectfully
 
 Building a reliable monthly pipeline is the real engineering challenge.

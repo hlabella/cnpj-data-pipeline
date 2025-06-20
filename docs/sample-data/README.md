@@ -1,6 +1,6 @@
 # Dados de Exemplo CNPJ
 
-Antes de processar 50 milhões de registros, teste com 10. Estes arquivos são amostras reais dos dados CNPJ, preservando todas as peculiaridades do formato original.
+Antes de processar 63 milhões de registros, teste com 10. Estes arquivos são amostras reais dos dados CNPJ, preservando todas as peculiaridades do formato original.
 
 ## Arquivos Disponíveis
 
@@ -219,7 +219,7 @@ Estes arquivos de exemplo são seu laboratório. Use-os para:
 - Entender a estrutura antes do processamento em massa
 - Treinar novos membros da equipe
 
-Dominar estes 10 registros é o primeiro passo para processar 50 milhões com confiança.
+Dominar estes 10 registros é o primeiro passo para processar 63 milhões com confiança.
 
 ---
 
