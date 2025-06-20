@@ -17,6 +17,9 @@ assignees: ''
 **Comportamento esperado:**
 [O que deveria acontecer]
 
+**Solução proposta:** (opcional)
+[Code snippet]
+
 **Contexto adicional:** (opcional)
 [Logs, screenshots, ambiente]
 
