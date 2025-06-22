@@ -1,6 +1,8 @@
 # 🇧🇷 CNPJ Data Pipeline
 
-Um script modular e configurável para processar arquivos CNPJ da Receita Federal do Brasil. Processamento inteligente de 63+ milhões de empresas com suporte a múltiplos bancos de dados.
+Pipeline modular para processar dados CNPJ da Receita Federal. Processa 60+ milhões de empresas brasileiras com suporte a múltiplos bancos de dados.
+
+**[English version below](#-cnpj-data-pipeline-english)** 👇
 
 ## Características Principais
 
@@ -14,196 +16,76 @@ Um script modular e configurável para processar arquivos CNPJ da Receita Federa
 
 ## Início Rápido
 
-### Opção 1: Setup Interativo (Recomendado)
-
 ```bash
 # Clone o repositório
 git clone https://github.com/cnpj-chat/cnpj-data-pipeline
 cd cnpj-data-pipeline
 
-# Execute o assistente de configuração
-python setup.py
-```
+# Opção 1: Setup interativo (recomendado)
+make setup
 
-O assistente irá:
-- Detectar recursos do sistema
-- Configurar conexão com banco de dados
-- Instalar dependências necessárias
-- Criar configuração otimizada
-
-### Opção 2: Configuração Manual
-
-```bash
-# Instalar dependências
-pip install -r requirements.txt
-
-# Configurar ambiente
-cp env.example .env
+# Opção 2: Setup manual
+make install
+make env
 # Editar .env com suas configurações
-
-# Executar
-python main.py
+make run
 ```
 
-### Docker
+### Com Docker
 
 ```bash
-# PostgreSQL (padrão)
-docker-compose --profile postgres up --build
+# Iniciar PostgreSQL
+make docker-db
 
-# Com configurações customizadas
-DATABASE_BACKEND=postgresql BATCH_SIZE=100000 docker-compose --profile postgres up
+# Executar pipeline
+make docker-run
 
-# Com filtros de dados
-docker-compose run --rm pipeline --filter-uf SP --filter-cnae 62
+# Parar containers
+make docker-stop
+
+# Limpar tudo (containers + volumes)
+make docker-clean
 ```
 
-## Filtragem de Dados
+## Configuração (.env)
 
-Processe apenas os dados que você precisa com filtros via linha de comando:
-
-```bash
-# Filtrar por estado (UF)
-python main.py --filter-uf SP
-python main.py --filter-uf SP,RJ,MG
-
-# Filtrar por atividade econômica (CNAE)
-python main.py --filter-cnae 62
-python main.py --filter-cnae 62,47
-
-# Filtrar por porte da empresa
-python main.py --filter-porte 1,3  # ME e EPP
-
-# Combinar filtros
-python main.py --filter-uf SP --filter-cnae 62 --filter-porte 1
-
-# Listar filtros disponíveis
-python main.py --list-filters
-```
-
-### Filtros Disponíveis
-
-| Filtro | Descrição | Exemplo |
-|--------|-----------|---------|
-| `--filter-uf` | Estados brasileiros | `SP,RJ,MG` |
-| `--filter-cnae` | Códigos de atividade (prefixo) | `62,47` |
-| `--filter-porte` | Porte: 1=ME, 3=EPP, 5=Demais | `1,3` |
-
-## Configuração
-
-### Seleção de Backend
+### Essencial
 
 ```bash
-# PostgreSQL (padrão e recomendado)
+# Database
 DATABASE_BACKEND=postgresql
 
-# Suporte futuro
+# Future support
 # DATABASE_BACKEND=mysql
 # DATABASE_BACKEND=bigquery
 # DATABASE_BACKEND=sqlite
+
+# Performance
+BATCH_SIZE=50000              # Batch size
+MAX_MEMORY_PERCENT=80         # Max memory usage
 ```
 
-### Estratégias de Processamento
-
-O sistema detecta automaticamente a estratégia ideal:
-
-| Memória | Estratégia | Descrição |
-|---------|------------|-----------|
-| <8GB | `memory_constrained` | Processamento em chunks pequenos |
-| 8-32GB | `high_memory` | Batches maiores, cache otimizado |
-| >32GB | `distributed` | Processamento paralelo máximo |
-
-### Variáveis de Configuração
-
-| Variável | Padrão | Descrição |
-|----------|---------|-----------|
-| `BATCH_SIZE` | `50000` | Tamanho do lote para operações |
-| `MAX_MEMORY_PERCENT` | `80` | Uso máximo de memória |
-| `TEMP_DIR` | `./temp` | Diretório temporário |
-| `DB_HOST` | `localhost` | Host PostgreSQL |
-| `DB_PORT` | `5432` | Porta PostgreSQL |
-| `DB_NAME` | `cnpj` | Nome do banco |
-
-### Otimização de Performance
-
-| Variável | Padrão | Descrição |
-|----------|---------|-----------|
-| `DOWNLOAD_STRATEGY` | `sequential` | `sequential` ou `parallel` |
-| `DOWNLOAD_WORKERS` | `4` | Número de downloads paralelos |
-| `KEEP_DOWNLOADED_FILES` | `false` | Manter arquivos para re-execuções |
-
-## Deployment
-
-Este é um job batch que processa dados CNPJ e finaliza. A Receita Federal atualiza os dados mensalmente, então agende a execução mensal.
-
-### Execução Manual
+### Otimizações
 
 ```bash
-# Executar uma vez
-docker-compose up
+# Downloads
+DOWNLOAD_STRATEGY=parallel    # ou sequential
+DOWNLOAD_WORKERS=4           # Para downloads paralelos
+KEEP_DOWNLOADED_FILES=false  # true economiza bandwidth em re-execuções
 
-# Com downloads paralelos
-DOWNLOAD_STRATEGY=parallel DOWNLOAD_WORKERS=3 docker-compose up
-
-# Manter arquivos para re-execuções (economiza bandwidth)
-KEEP_DOWNLOADED_FILES=true docker-compose up
-
-# Ou sem Docker
-python main.py
-
-# Com filtros
-python main.py --filter-uf SP --filter-cnae 62
+# Diretórios
+TEMP_DIR=./temp              # Para arquivos temporários
 ```
 
-### Execução Agendada (Mensal)
+## Agendamento Mensal
 
-**Linux/Mac (cron):**
-```bash
-# Executar no dia 5 de cada mês às 2h da manhã
-crontab -e
-# Adicionar:
-0 2 5 * * cd /caminho/para/cnpj-data-pipeline && docker-compose up >> /var/log/cnpj-pipeline.log 2>&1
-```
-
-**Windows (Task Scheduler):**
-- Criar tarefa agendada mensal
-- Comando: `docker-compose up`
-
-**Kubernetes:**
-```yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: cnpj-pipeline
-spec:
-  schedule: "0 2 5 * *"  # Dia 5 às 2h
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: cnpj-pipeline
-            image: sua-imagem
-          restartPolicy: OnFailure
-```
-
-**GitHub Actions:**
-```yaml
-on:
-  schedule:
-    - cron: '0 2 5 * *'  # Dia 5 às 2h UTC
-```
-
-### Plataformas que Requerem Containers Ativos
-
-Algumas plataformas (PaaS) esperam que containers permaneçam em execução. Se necessário:
+A Receita atualiza os dados mensalmente. Configure execução automática:
 
 ```bash
-# Manter container ativo
-docker run -d --name cnpj sua-imagem tail -f /dev/null
+# Linux/Mac (cron) - dia 5 às 2h
+0 2 5 * * cd /path/to/cnpj-pipeline && make run >> logs/scheduled.log 2>&1
 
-# Agendar execução mensal do comando:
-docker exec cnpj python main.py
+# Ou use o scheduler da sua plataforma (Task Scheduler, Kubernetes CronJob, etc.)
 ```
 
 ## Arquitetura
@@ -211,67 +93,41 @@ docker exec cnpj python main.py
 ```
 cnpj-data-pipeline/
 ├── src/
-│   ├── config.py          # Configuração com auto-detecção
-│   ├── downloader.py      # Download e extração
-│   ├── processor.py       # Parsing e transformação
-│   ├── filters/           # Sistema de filtros
-│   │   ├── base.py        # Interface de filtros
-│   │   ├── location.py    # Filtros geográficos
-│   │   ├── business.py    # Filtros de negócio
-│   │   └── registry.py    # Factory de filtros
-│   ├── download_strategies/ # Estratégias de download
-│   │   ├── sequential.py  # Download sequencial
-│   │   └── parallel.py    # Download paralelo
-│   └── database/          # Abstração de banco de dados
-│       ├── base.py        # Interface abstrata
-│       ├── factory.py     # Factory pattern
-│       └── postgres.py    # Implementação PostgreSQL
-├── main.py                # Ponto de entrada
-└── setup.py               # Assistente de configuração
+│   ├── config.py            # Auto-detecção de recursos
+│   ├── downloader.py        # Download com retry
+│   ├── processor.py         # Parsing otimizado
+│   ├── download_strategies/ # Sequential/Parallel
+│   └── database/            # Abstração PostgreSQL
+├── main.py                  # Entry point
+├── setup.py                 # Assistente interativo
+└── Makefile                 # Comandos úteis
 ```
 
 ## Fluxo de Processamento
 
-1. **Descoberta**: Localiza diretório mais recente de dados CNPJ
-2. **Download**: Baixa e extrai arquivos ZIP com retry automático (paralelo opcional)
-3. **Filtragem**: Aplica filtros selecionados para reduzir dados processados
-4. **Processamento**: Parse dos CSVs com estratégia adaptativa
-5. **Carga**: Bulk upsert otimizado no banco de dados
-6. **Rastreamento**: Marca arquivos como processados
-
-## Tipos de Arquivo Suportados
-
-| Arquivo | Tabela | Descrição |
-|---------|--------|-----------|
-| `CNAECSV` | `cnaes` | Classificações de atividade econômica |
-| `EMPRECSV` | `empresas` | Registros de empresas |
-| `ESTABELECSV` | `estabelecimentos` | Dados de estabelecimentos |
-| `MOTICSV` | `motivos_situacao_cadastral` | Motivos de situação cadastral |
-| `MUNICCSV` | `municipios` | Códigos de municípios |
-| `NATJUCSV` | `naturezas_juridicas` | Naturezas jurídicas |
-| `PAISCSV` | `paises` | Códigos de países |
-| `QUALSCSV` | `qualificacoes_socios` | Qualificações de sócios |
-| `SIMPLECSV` | `dados_simples` | Dados do Simples Nacional |
-| `SOCIOCSV` | `socios` | Quadro societário |
+1. **Descoberta**: Localiza dados mais recentes da Receita
+2. **Download**: Baixa ZIPs com retry automático
+3. **Processamento**: Parse otimizado dos CSVs
+4. **Carga**: Bulk insert no PostgreSQL
+5. **Rastreamento**: Marca arquivos processados
 
 ## Performance
 
-Tempos típicos de processamento:
-
-| Sistema | Memória | Tempo (63M+ empresas) |
-|---------|---------|---------------------|
-| VPS básico | 4GB | ~8 horas |
+| Sistema | Memória | Tempo Estimado |
+|---------|---------|----------------|
+| VPS básico | 4GB | ~6 horas |
 | Servidor padrão | 16GB | ~2 horas |
-| Servidor high-end | 64GB+ | ~1 hora |
+| High-end | 64GB+ | ~1 hora |
+
+## Comandos Úteis
+
+```bash
+make logs           # Ver logs recentes
+make clean          # Limpar temporários
+make clean-data     # Remover downloads (pede confirmação)
+```
 
 ## Desenvolvimento
-
-### Princípios de Design
-
-- **Modular**: Cada componente com responsabilidade única
-- **Resiliente**: Tratamento de erros e retry automático
-- **Eficiente**: Uso otimizado de memória e operações bulk
-- **Adaptativo**: Ajuste automático aos recursos disponíveis
 
 ### Adicionando Novo Backend
 
@@ -284,12 +140,10 @@ Tempos típicos de processamento:
 
 # 🇧🇷 CNPJ Data Pipeline (English)
 
-A configurable, modular data pipeline for Brazilian CNPJ registry files. Smart processing of 60+ million companies with multi-database support.
+Modular pipeline for processing Brazilian CNPJ (company registry) data. Processes 60+ million companies with optimized PostgreSQL support.
 
 ## Key Features
 
-- **Modular Architecture**: Clean separation with database abstraction
-- **Multi-Database**: Full PostgreSQL support, placeholders for others
 - **Smart Processing**: Auto-adapts to available resources
 - **Advanced Filtering**: Filter by state, CNAE, and company size via CLI
 - **Parallel Downloads**: Configurable strategy for optimized download speed
@@ -299,103 +153,120 @@ A configurable, modular data pipeline for Brazilian CNPJ registry files. Smart p
 
 ## Quick Start
 
-### Interactive Setup
-
 ```bash
-python setup.py
+# Clone repository
+git clone https://github.com/cnpj-chat/cnpj-data-pipeline
+cd cnpj-data-pipeline
+
+# Option 1: Interactive setup (recommended)
+make setup
+
+# Option 2: Manual setup
+make install
+make env
+# Edit .env with your settings
+make run
 ```
 
-### Manual Setup
+### With Docker
 
 ```bash
-pip install -r requirements.txt
-cp env.example .env
-python main.py
+# Start PostgreSQL
+make docker-db
+
+# Run pipeline
+make docker-run
+
+# Stop containers
+make docker-stop
+
+# Clean everything (containers + volumes)
+make docker-clean
 ```
 
-### Docker
+
+## Configuration (.env)
+
+### Essential
 
 ```bash
-docker-compose --profile postgres up --build
+# Database
+DATABASE_BACKEND=postgresql
 
-# With data filtering
-docker-compose run --rm pipeline --filter-uf SP --filter-cnae 62
+# Future support
+# DATABASE_BACKEND=mysql
+# DATABASE_BACKEND=bigquery
+# DATABASE_BACKEND=sqlite
 
-# With parallel downloads
-DOWNLOAD_STRATEGY=parallel DOWNLOAD_WORKERS=3 docker-compose up
+# Performance
+BATCH_SIZE=50000              # Batch size
+MAX_MEMORY_PERCENT=80         # Max memory usage
 ```
 
-## Data Filtering
-
-Process only the data you need using command-line filters:
+### Optimizations
 
 ```bash
-# Filter by state
-python main.py --filter-uf SP,RJ
+# Downloads
+DOWNLOAD_STRATEGY=parallel    # or sequential
+DOWNLOAD_WORKERS=4           # For parallel downloads
+KEEP_DOWNLOADED_FILES=false  # true saves bandwidth on re-runs
 
-# Filter by economic activity (CNAE code prefix)
-python main.py --filter-cnae 62,47
-
-# Filter by company size (1=ME, 3=EPP, 5=Others)
-python main.py --filter-porte 1,3
-
-# Combine filters
-python main.py --filter-uf SP --filter-cnae 62 --filter-porte 1
-
-# List available filters
-python main.py --list-filters
+# Directories
+TEMP_DIR=./temp              # For temporary files
 ```
 
-## Deployment
+## Monthly Scheduling
 
-This is a batch job that processes CNPJ data and exits. Schedule it to run monthly.
-
-### Manual Execution
+Government updates data monthly. Set up automatic execution:
 
 ```bash
-# Run once
-docker-compose up
-```
+# Linux/Mac (cron) - 5th day at 2 AM
+0 2 5 * * cd /path/to/cnpj-pipeline && make run >> logs/scheduled.log 2>&1
 
-### Scheduled Execution (Monthly)
-
-**Linux/Mac (cron):**
-```bash
-# Run on the 5th of each month at 2 AM
-0 2 5 * * cd /path/to/cnpj-pipeline && docker-compose up
-```
-
-**Other platforms:** Use your platform's scheduler (Task Scheduler, Kubernetes CronJob, GitHub Actions, etc.)
-
-### Note for PaaS Platforms
-
-If your platform requires containers to stay running:
-
-```bash
-# Keep container alive
-docker run -d --name cnpj your-image tail -f /dev/null
-
-# Schedule this command monthly:
-docker exec cnpj python main.py
-```
-
-## Configuration
-
-Set `DATABASE_BACKEND`, `PROCESSING_STRATEGY`, and optimization options in `.env` file:
-
-```bash
-# Performance optimizations
-DOWNLOAD_STRATEGY=parallel    # sequential|parallel
-DOWNLOAD_WORKERS=4           # Number of parallel downloads
-KEEP_DOWNLOADED_FILES=false  # Keep files for re-runs (saves bandwidth)
+# Or use your platform's scheduler (Task Scheduler, Kubernetes CronJob, etc.)
 ```
 
 ## Architecture
 
-Factory pattern for database adapters, intelligent resource detection, chunked processing for large files.
+```
+cnpj-data-pipeline/
+├── src/
+│   ├── config.py            # Resource auto-detection
+│   ├── downloader.py        # Download with retry
+│   ├── processor.py         # Optimized parsing
+│   ├── filters/             # Filter system
+│   ├── download_strategies/ # Sequential/Parallel
+│   └── database/            # PostgreSQL abstraction
+├── main.py                  # Entry point
+├── setup.py                 # Interactive wizard
+└── Makefile                 # Useful commands
+```
+
+## Processing Flow
+
+1. **Discovery**: Finds latest government data
+2. **Download**: Gets ZIPs with auto-retry
+3. **Filtering**: Applies selected filters
+4. **Processing**: Optimized CSV parsing
+5. **Loading**: Bulk insert to PostgreSQL
+6. **Tracking**: Marks processed files
 
 ## Performance
 
-Processes 63M+ records in 1-12 hours depending on system resources.
+| System | Memory | Estimated Time |
+|--------|--------|----------------|
+| Basic VPS | 4GB | ~6 hours |
+| Standard server | 16GB | ~2 hours |
+| High-end | 64GB+ | ~1 hour |
 
-Made with engineering excellence for the Brazilian tech community.
+## Useful Commands
+
+```bash
+make logs           # View recent logs
+make clean          # Clean temporary files
+make clean-data     # Remove downloads (asks confirmation)
+```
+
+---
+
+Made with ❤️ for the Brazilian tech community
