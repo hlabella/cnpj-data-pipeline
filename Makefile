@@ -22,7 +22,8 @@ help:
 	@echo "  make env            🔧 Create .env from example"
 	@echo "  make run            🏃 Run the full pipeline"
 	@echo "  make docker-build   🐳 Build Docker image"
-	@echo "  make docker-run     🐳 Run pipeline in Docker"
+	@echo "  make docker-run     🐳 Run pipeline in Docker (interactive)"
+	@echo "  make docker-rund    🐳 Run pipeline in Docker (detached)"
 	@echo "  make docker-db      🐳 Start PostgreSQL container"
 	@echo "  make docker-stop    🛑 Stop all containers"
 	@echo "  make docker-clean   🗑️  Remove containers and volumes"
@@ -55,20 +56,24 @@ docker-build:
 	@$(DOCKER_COMPOSE) build
 
 docker-run:
-	@echo "🐳 Running pipeline in Docker..."
+	@echo "🐳 Running pipeline in Docker (interactive mode)..."
 	@$(DOCKER_COMPOSE) --profile postgres up
+
+docker-rund:
+	@echo "🐳 Running pipeline in Docker (detached mode)..."
+	@$(DOCKER_COMPOSE) --profile postgres up -d
 
 docker-db:
 	@echo "🐳 Starting PostgreSQL database..."
-	@$(DOCKER_COMPOSE) up -d postgres
+	@$(DOCKER_COMPOSE) --profile postgres up -d postgres
 
 docker-stop:
 	@echo "🛑 Stopping all containers..."
-	@$(DOCKER_COMPOSE) down
+	@$(DOCKER_COMPOSE) --profile postgres down
 
 docker-clean:
 	@echo "🗑️ Removing containers and volumes..."
-	@$(DOCKER_COMPOSE) down -v
+	@$(DOCKER_COMPOSE) --profile postgres down -v
 	@echo "✅ Docker cleanup complete!"
 
 # Maintenance targets
@@ -99,5 +104,5 @@ logs:
 
 
 .PHONY: help setup install env run \
-	docker-build docker-run docker-db docker-stop docker-clean \
+	docker-build docker-run docker-rund docker-db docker-stop docker-clean \
 	clean clean-data logs
