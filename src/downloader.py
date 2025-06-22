@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 
 import requests
 from bs4 import BeautifulSoup
+from requests.exceptions import ConnectionError, Timeout
 
 from .download_strategies import create_download_strategy
 
@@ -32,7 +33,7 @@ class Downloader:
                 timeout=(self.config.connect_timeout, self.config.read_timeout),
             )
             if response.status_code != 200:
-                logger.error(f"Failed to access base URL: {response.status_code}")
+                logger.error(f"Failed to access base URL: HTTP {response.status_code}")
                 return []
 
             soup = BeautifulSoup(response.text, "html.parser")
@@ -50,6 +51,22 @@ class Downloader:
             dirs.sort(reverse=True)  # Newest first
             return dirs
 
+        except (ConnectionError, Timeout) as e:
+            # Specific handling for connection issues
+            logger.error(
+                f"Failed to retrieve CNPJ directories from {self.config.base_url}\n"
+                f"\n"
+                f"This could be due to:\n"
+                f"  1. Receita Federal server is temporarily offline\n"
+                f"  2. Network connectivity issues\n"
+                f"  3. DNS resolution problems\n"
+                f"\n"
+                f"Please check https://arquivos.receitafederal.gov.br/dados/cnpj/dados_abertos_cnpj\n"
+                f"for service status."
+            )
+            logger.debug(f"Error details: {e}")
+            return []
+
         except Exception as e:
             logger.error(f"Error getting directories: {e}")
             return []
@@ -64,7 +81,7 @@ class Downloader:
 
             if response.status_code != 200:
                 logger.error(
-                    f"Failed to access directory {directory}: {response.status_code}"
+                    f"Failed to access directory {directory}: HTTP {response.status_code}"
                 )
                 return []
 
@@ -77,6 +94,20 @@ class Downloader:
                     files.append(href)
 
             return files
+
+        except (ConnectionError, Timeout):
+            logger.error(
+                f"Failed to list files in directory {directory}\n"
+                f"\n"
+                f"This could be due to:\n"
+                f"  1. Receita Federal server is temporarily offline\n"
+                f"  2. Network connectivity issues\n"
+                f"  3. The directory structure has changed\n"
+                f"\n"
+                f"Please check https://arquivos.receitafederal.gov.br/dados/cnpj/dados_abertos_cnpj\n"
+                f"for service status."
+            )
+            return []
 
         except Exception as e:
             logger.error(f"Error getting files from {directory}: {e}")

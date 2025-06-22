@@ -85,7 +85,6 @@ def main():
         # Get latest directory
         directories = downloader.get_latest_directories()
         if not directories:
-            logger.error("No directories found")
             return
 
         latest_dir = directories[0]
@@ -94,7 +93,6 @@ def main():
         # Get files in latest directory
         files = downloader.get_directory_files(latest_dir)
         if not files:
-            logger.error(f"No files found in {latest_dir}")
             return
 
         # Get all processed files for this directory
