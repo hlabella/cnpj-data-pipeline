@@ -93,7 +93,7 @@ class Downloader:
                 if href and href.endswith(".zip"):
                     files.append(href)
 
-            return files
+            return files[:1]
 
         except (ConnectionError, Timeout):
             logger.error(

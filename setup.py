@@ -6,7 +6,7 @@ Helps users configure their environment for the CNPJ data pipeline.
 
 import sys
 from pathlib import Path
-
+import os
 
 def print_header():
     """Print the setup wizard header."""
@@ -30,30 +30,51 @@ def detect_system_resources():
         print("Unable to detect system resources (psutil not installed)")
         return None, None
 
-
 def get_database_configuration():
     """Get database configuration from user."""
     print("\nDatabase Configuration:")
-    print("Currently, only PostgreSQL is fully supported.")
-    print("Other databases (MySQL, BigQuery, SQLite) are planned for future releases.")
+    print("Currently supported backends: PostgreSQL, SQLite\n")
 
-    use_postgresql = input("\nUse PostgreSQL? (y/n) [y]: ").lower().strip()
-    if use_postgresql in ["", "y", "yes"]:
-        print("\nPostgreSQL Configuration:")
-        config = {
-            "DATABASE_BACKEND": "postgresql",
-            "POSTGRES_HOST": input("Host [localhost]: ").strip() or "localhost",
-            "POSTGRES_PORT": input("Port [5432]: ").strip() or "5432",
-            "POSTGRES_NAME": input("Database [cnpj]: ").strip() or "cnpj",
-            "POSTGRES_USER": input("User [postgres]: ").strip() or "postgres",
-            "POSTGRES_PASSWORD": input("Password: ").strip(),
-        }
-        return config
-    else:
+    backend = input("Select database backend [postgresql/sqlite] (default: postgresql): ") \
+              .strip().lower() or "postgresql"
+
+    if backend not in ("postgresql", "sqlite"):
         print("\nOther database backends are not yet implemented.")
-        print("Please use PostgreSQL for now.")
         sys.exit(1)
 
+    config = {"DATABASE_BACKEND": backend}
+
+    if backend == "postgresql":
+        print("\nPostgreSQL Configuration:")
+        config.update({
+            "POSTGRES_HOST": input("Host [localhost]: ").strip() or "localhost",
+            "POSTGRES_PORT": input("Port [5432]: ").strip() or "5432",
+            "POSTGRES_NAME": input("Database name [cnpj]: ").strip() or "cnpj",
+            "POSTGRES_USER": input("User [postgres]: ").strip() or "postgres",
+            "POSTGRES_PASSWORD": input("Password: ").strip(),
+        })
+
+    elif backend == "sqlite":
+        print("\nSQLite Configuration:")
+        db_file = input(f"SQLite file path [cnpj.db]: ").strip() or "cnpj.db"
+        config["SQLITE_DB_FILE"] = db_file
+        import sqlite3
+        # path to initialization SQL script (same as postgres)
+        init_script_path = os.path.join("init-db", "postgres.sql")
+        # conect and 
+        conn = sqlite3.connect(db_file)
+        try:
+            with open(init_script_path, "r", encoding="utf-8") as f:
+                sql_script = f.read()
+
+            # executescript() will run all statements in the file
+            conn.executescript(sql_script)
+            print(f"Initialized database with {init_script_path}")
+        finally:
+            conn.close()
+
+
+    return config
 
 def get_processing_configuration(memory_gb=None, cpu_count=None):
     """Get processing configuration."""
@@ -235,7 +256,7 @@ def main():
     # Final instructions
     print("\n🎉 Setup complete!")
     print("\nNext steps:")
-    print("1. Ensure your PostgreSQL database is running")
+    print("1. Ensure your database is running")
     print("2. Create the CNPJ database and tables (see docs/)")
     print("3. Run the data pipeline: python main.py")
     print("\nFor more information, see README.md")

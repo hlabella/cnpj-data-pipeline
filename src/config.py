@@ -67,9 +67,12 @@ class Config:
     db_password: str = field(
         default_factory=lambda: os.getenv("POSTGRES_PASSWORD", "postgres")
     )
-
+    
     # PostgreSQL-specific settings
     pg_work_mem: str = field(default_factory=lambda: os.getenv("PG_WORK_MEM", "256MB"))
+
+    # SQLite specific settings
+    sqlite_db_file: str = field(default_factory=lambda: os.getenv("SQLITE_DB_FILE", "cnpj.db"))
 
     # MySQL settings (placeholder for future use)
     mysql_host: str = field(

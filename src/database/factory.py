@@ -1,6 +1,7 @@
 from typing import Dict, Type
 from .base import DatabaseAdapter
 from .postgres import PostgreSQLAdapter
+from .sqlite import SQLiteAdapter
 
 
 # Registry of available adapters
@@ -9,7 +10,7 @@ ADAPTERS: Dict[str, Type[DatabaseAdapter]] = {
     # Placeholder for future implementations
     # "mysql": MySQLAdapter,
     # "bigquery": BigQueryAdapter,
-    # "sqlite": SQLiteAdapter,
+    "sqlite": SQLiteAdapter,
 }
 
 
