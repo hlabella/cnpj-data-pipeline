@@ -15,7 +15,7 @@ class SQLiteAdapter(DatabaseAdapter):
 
     def __init__(self, config):
         super().__init__(config)
-        self.db_file = getattr(config, 'sqlite_db_file', getattr(config, 'sqlite_db_file', ':memory:'))
+        self.db_file = getattr(config, 'sqlite_db_file', ':memory:')
         self.conn = None
         self._ensure_tracking_table()
 
@@ -30,30 +30,85 @@ class SQLiteAdapter(DatabaseAdapter):
         """Close SQLite connection."""
         if self.conn:
             self.conn.close()
-            logger.info("SQLite connection closed")
             self.conn = None
 
     def _ensure_tracking_table(self):
         """Ensure the processed_files tracking table exists."""
-        self.connect()
-        cur = self.conn.cursor()
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS processed_files (
-                directory TEXT NOT NULL,
-                filename TEXT NOT NULL,
-                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (directory, filename)
+        try:
+            self.connect()
+            cur = self.conn.cursor()
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS processed_files (
+                    directory TEXT NOT NULL,
+                    filename TEXT NOT NULL,
+                    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (directory, filename)
+                )
+                """
             )
-            """
-        )
-        self.conn.commit()
-        cur.close()
+            self.conn.commit()
+            cur.close()
+
+        except Exception as e:
+            logger.error(f"Error creating tracking table: {e}")
+            raise
     
     def ensure_tracking_table(self):
         """Public method to ensure tracking table exists."""
         self._ensure_tracking_table()
 
+    def get_processed_files(self, directory: str) -> Set[str]:
+        """Get set of processed files for a directory."""
+        try:
+            self.connect()
+            cur = self.conn.cursor()
+            cur.execute(
+                "SELECT filename FROM processed_files WHERE directory = ?",
+                (directory,)
+            )
+            rows = cur.fetchall()
+            cur.close()
+            return {row[0] for row in rows}
+        
+        except Exception as e:
+            logger.error(f"Error fetching processed files for {directory}: {e}")
+            return set()
+   
+    def is_processed(self, directory: str, filename: str) -> bool:
+        """Check if a file has already been processed."""
+        try:
+            self.connect()
+            cur = self.conn.cursor()
+            cur.execute(
+                "SELECT 1 FROM processed_files WHERE directory = ? AND filename = ? LIMIT 1",
+                (directory, filename)
+            )
+            exists = cur.fetchone() is not None
+            cur.close()
+            return exists
+        
+        except Exception as e:
+            logger.error(f"Error checking if file is processed: {e}")
+            return False
+        
+        
+    def mark_processed(self, directory: str, filename: str):
+        """Mark file as processed."""
+        try:
+            self.connect()
+            cur = self.conn.cursor()
+            cur.execute(
+                "INSERT OR IGNORE INTO processed_files (directory, filename) VALUES (?, ?)",
+                (directory, filename)
+            )
+            self.conn.commit()
+            cur.close()
+
+        except Exception as e:
+            logger.error(f"Error marking file as processed: {e}")
+            raise
+         
     def bulk_upsert(self, df: pl.DataFrame, table: str, **kwargs):
         """Bulk upsert data into SQLite table."""
         if df.height == 0:
@@ -73,38 +128,3 @@ class SQLiteAdapter(DatabaseAdapter):
         self.conn.commit()
         cur.close()
         logger.info(f"Upserted {len(values)} rows into '{table}'")
-
-    def get_processed_files(self, directory: str) -> Set[str]:
-        """Get set of processed files for a directory."""
-        self.connect()
-        cur = self.conn.cursor()
-        cur.execute(
-            "SELECT filename FROM processed_files WHERE directory = ?",
-            (directory,)
-        )
-        rows = cur.fetchall()
-        cur.close()
-        return {row[0] for row in rows}
-
-    def mark_processed(self, directory: str, filename: str):
-        """Mark file as processed."""
-        self.connect()
-        cur = self.conn.cursor()
-        cur.execute(
-            "INSERT OR IGNORE INTO processed_files (directory, filename) VALUES (?, ?)",
-            (directory, filename)
-        )
-        self.conn.commit()
-        cur.close()
-
-    def is_processed(self, directory: str, filename: str) -> bool:
-        """Check if a file has already been processed."""
-        self.connect()
-        cur = self.conn.cursor()
-        cur.execute(
-            "SELECT 1 FROM processed_files WHERE directory = ? AND filename = ? LIMIT 1",
-            (directory, filename)
-        )
-        exists = cur.fetchone() is not None
-        cur.close()
-        return exists
