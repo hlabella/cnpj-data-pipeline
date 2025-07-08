@@ -7,7 +7,7 @@ Pipeline modular para processar dados CNPJ da Receita Federal. Processa 60+ milh
 ## Características Principais
 
 - **Arquitetura Modular**: Separação clara de responsabilidades com camada de abstração de banco de dados
-- **Multi-Banco**: PostgreSQL totalmente suportado, com placeholders para MySQL, BigQuery e SQLite
+- **Multi-Banco**: PostgreSQL e SQLite totalmente suportado, com placeholders para MySQL, BigQuery
 - **Processamento Inteligente**: Adaptação automática da estratégia baseada em recursos disponíveis
 - **Downloads Paralelos**: Estratégia configurável para otimizar velocidade de download
 - **Processamento Incremental**: Rastreamento de arquivos processados para evitar duplicações
